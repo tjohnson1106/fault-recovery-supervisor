@@ -16,6 +16,14 @@ defmodule Warehouse.Receiver do
     {:ok, state}
   end
 
+  # reassign chunked size to received packages
+
+  def receive_and_chunk(packages) do
+    packages
+    |> Enum.chunk_every(5)
+    |> Enum.each(&receive_packages/1)
+  end
+
   # receive a batch of packages and start and assign processes 
 
   def receive_packages(packages) do
