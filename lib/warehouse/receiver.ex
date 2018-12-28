@@ -22,16 +22,40 @@ defmodule Warehouse.Receiver do
     GenServer.cast(__MODULE__, {:receive_packages, packages})
   end
 
+  # start process and call deliver packages
+
   def handle_cast({:receive_packages, packages}, state) do
     IO.puts("received #{Enum.count(packages)}")
+
     {:ok, deliverator} = Deliverator.start()
+    Process.monitor(deliverator)
     state = assign_packages(state, packages, deliverator)
-    Warehouse.Deliverator.deliver_packages(deliverator, packages)
+
+    Deliverator.deliver_packages(deliverator, packages)
     {:noreply, state}
   end
 
   def handle_info({:package_delivered, package}, state) do
     IO.puts("package #{inspect(package)} was delivered")
+
+    delivered_assignments =
+      state.assignments
+      |> Enum.filter(fn {assigned_package, _pid} ->
+        assigned_package == package
+      end)
+
+    assignments = state.assignments -- delivered_assignments
+    state = %{state | assignments: assignments}
+    {:noreply, state}
+  end
+
+  def handle_info({:DOWN, _ref, :process, deliverator, :normal}, state) do
+    IO.puts("deliverator #{inspect(deliverator)} completed the mission and terminated")
+    {:noreply, state}
+  end
+
+  def handle_info({:DOWN, _ref, :process, deliverator, reason}, state) do
+    IO.puts("deliverator #{inspect(deliverator)} went down. details: #{inspect(reason)}")
     {:noreply, state}
   end
 
