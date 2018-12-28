@@ -30,6 +30,11 @@ defmodule Warehouse.Receiver do
     {:noreply, state}
   end
 
+  def handle_info({:package_delivered, package}, state) do
+    IO.puts("package #{inspect(package)} was delivered")
+    {:noreply, state}
+  end
+
   defp assign_packages(state, packages, deliverator) do
     new_assignments =
       packages

@@ -15,11 +15,12 @@ defmodule Warehouse.Deliverator do
     {:noreply, state}
   end
 
-  def deliver([]), do: Process.exit(self(), :normal)
+  defp deliver([]), do: Process.exit(self(), :normal)
 
-  def deliver([package | remaining_packages]) do
+  defp deliver([package | remaining_packages]) do
     IO.puts("Deliverator #{inspect(self())} delivering #{inspect(package)}")
     make_delivery()
+    send(Receiver, {:package_delivered, package})
     deliver(remaining_packages)
   end
 
