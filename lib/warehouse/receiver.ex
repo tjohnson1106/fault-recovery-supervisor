@@ -1,5 +1,6 @@
 defmodule Warehouse.Receiver do
   use GenServer
+  alias Warehouse.Deliverator
 
   def start_link do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
@@ -13,5 +14,18 @@ defmodule Warehouse.Receiver do
     }
 
     {:ok, state}
+  end
+
+  # receive a batch of packages and start and assign processes 
+
+  def receive_packages(packages) do
+    GenServer.cast(__MODULE__, {:receive_packages, packages})
+  end
+
+  def handle_cast({:receive_packages, packages}, state) do
+    IO.puts("received #{Enum.count(packages)}")
+    {:ok, deliverator} = Deliverator.start()
+    Warehouse.Deliverator.deliver_packages(deliverator, packages)
+    {:noreply, state}
   end
 end
