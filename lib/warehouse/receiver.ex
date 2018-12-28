@@ -25,7 +25,17 @@ defmodule Warehouse.Receiver do
   def handle_cast({:receive_packages, packages}, state) do
     IO.puts("received #{Enum.count(packages)}")
     {:ok, deliverator} = Deliverator.start()
+    state = assign_packages(state, packages, deliverator)
     Warehouse.Deliverator.deliver_packages(deliverator, packages)
     {:noreply, state}
+  end
+
+  defp assign_packages(state, packages, deliverator) do
+    new_assignments =
+      packages
+      |> Enum.map(fn package -> {package, deliverator} end)
+
+    assignments = state.assignments ++ new_assignments
+    %{state | assignments: assignments}
   end
 end
