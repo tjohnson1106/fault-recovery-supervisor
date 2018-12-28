@@ -56,6 +56,20 @@ defmodule Warehouse.Receiver do
 
   def handle_info({:DOWN, _ref, :process, deliverator, reason}, state) do
     IO.puts("deliverator #{inspect(deliverator)} went down. details: #{inspect(reason)}")
+    failed_assignments = filter_by_deliverator(deliverator, state.assignments)
+
+    failed_packages =
+      failed_assignments
+      |> Enum.map(fn {
+                       package,
+                       _pid
+                     } ->
+        package
+      end)
+
+    assignments = state.assignments -- failed_assignments
+    state = %{state | assignments: assignments}
+    receive_packages(failed_packages)
     {:noreply, state}
   end
 
@@ -66,5 +80,10 @@ defmodule Warehouse.Receiver do
 
     assignments = state.assignments ++ new_assignments
     %{state | assignments: assignments}
+  end
+
+  defp filter_by_deliverator(deliverator, assignments) do
+    assignments
+    |> Enum.filter(fn {_package, assigned_deliverator} -> assigned_deliverator == deliverator end)
   end
 end
